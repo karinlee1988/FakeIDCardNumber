@@ -19,6 +19,7 @@ import area
 class IdCardNumber(str):
     """
     用于对身份证号码进行处理
+    20210801 test OK
     """
 
     def __init__(self, id_card_number:str):
