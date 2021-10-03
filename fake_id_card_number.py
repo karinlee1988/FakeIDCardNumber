@@ -170,14 +170,14 @@ class IdCardNumber(str):
 
 if __name__ == '__main__':
     random_sex = random.randint(0, 1)  # 随机生成男(1)或女(0)
-    print(IdCardNumber.fake_id(random_sex,))  # 随机生成身份证号
-    print(IdCardNumber('410326199507103197').area_id)  # 地址编码:410326
-    print(IdCardNumber('410326199507103197').get_area_name())  # 地址:河南省洛阳市汝阳县
-    print(IdCardNumber('410326199507103197').get_birthday())  # 生日:1995-7-10
-    print(IdCardNumber('410326199507103197').get_birth()) # 生日:19950710
-    print(IdCardNumber('410326199507103197').get_age())  # 年龄:23(岁)
-    print(IdCardNumber('410326199507103197').get_sex())  # 性别:1(男)
-    print(IdCardNumber('410326199507103197').get_check_digit())  # 校验码:7
-    print(IdCardNumber.verify_id('410326199507103198'))  # 检验身份证是否正确:False
-    print(IdCardNumber('410326199507103197').eighteen_to_fifteen()) # 转为15位身份证：410326950710319
-    print(IdCardNumber('410326950710319').fifteen_to_eighteen())  # 转为18位身份证：410326199507103197
+    # print(IdCardNumber.fake_id(random_sex,))  # 随机生成身份证号
+    # print(IdCardNumber('410326199507103197').area_id)  # 地址编码:
+    print(IdCardNumber('654121198905094979').get_area_name())  # 地址:
+    print(IdCardNumber('654121198905094979').get_birthday())  # 生日:
+    print(IdCardNumber('654121198905094979').get_birth()) # 生日:
+    print(IdCardNumber('654121198905094979').get_age())  # 年龄:(岁)
+    print(IdCardNumber('654121198905094979').get_sex())  # 性别:(男)
+    print(IdCardNumber('654121198905094979').get_check_digit())  # 校验码:
+    print(IdCardNumber.verify_id('654121198905094979'))  # 检验身份证是否正确:
+    # print(IdCardNumber('410326199507103197').eighteen_to_fifteen()) # 转为15位身份证：
+    # print(IdCardNumber('410326950710319').fifteen_to_eighteen())  # 转为18位身份证：
