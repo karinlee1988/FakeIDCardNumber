@@ -16,46 +16,66 @@ from datetime import datetime, timedelta
 import area
 
 
-class IdCardNumber(str):
+class IdCardNumber:
     """
     用于对身份证号码进行处理
     20210801 test OK
     """
 
-    def __init__(self, id_card_number:str):
-        super(IdCardNumber, self).__init__()
+    def __init__(self, id_card_number: str):
+        if not isinstance(id_card_number, str):
+            raise TypeError("身份证号码必须是字符串类型")
+        if not (len(id_card_number) == 15 or len(id_card_number) == 18):
+            raise ValueError("身份证号码长度必须是15位或18位")
         self.id = id_card_number
         self.area_id = int(self.id[0:6])
-        self.birth_year = int(self.id[6:10])
-        self.birth_month = int(self.id[10:12])
-        self.birth_day = int(self.id[12:14])
+        if len(self.id) == 18:
+            self.birth_year = int(self.id[6:10])
+            self.birth_month = int(self.id[10:12])
+            self.birth_day = int(self.id[12:14])
+        else:  # 15位身份证
+            self.birth_year = int('19' + self.id[6:8])
+            self.birth_month = int(self.id[8:10])
+            self.birth_day = int(self.id[10:12])
 
-    def get_area_name(self):
-        """根据区域编号取出区域名称"""
+    def get_area_name(self) -> str:
+        """
+        根据区域编号取出区域名称
+        :return: 区域名称
+        :rtype: str
+        """
         return area.AREA_INFO[self.area_id]
 
-    def get_birthday(self):
-        """通过身份证号获取出生日期(只支持18位身份证，返回YYYY-MM-DD格式的日期字符串)"""
+    def get_birthday(self) -> str:
+        """
+        通过身份证号获取出生日期(只支持18位身份证，返回YYYY-MM-DD格式的日期字符串)
+        :return: 出生日期
+        :rtype: str
+        """
         return "{0}-{1}-{2}".format(self.birth_year, self.birth_month, self.birth_day)
 
     def get_birth(self) -> str:
         """
         通过身份证号码获取出生日期(返回8位日期字符串，支持15或18位身份证）
-        :return birth:出生日期
-        :rtype birth: str
+        :return: 出生日期
+        :rtype: str
         """
         number_length = len(self.id)
         if number_length == 18:
             birth = self.id[6:14]
             return birth
         elif number_length == 15:
-            birth = '19' + self.id[6:12]  #目前的15位身份证是19xx年出生
+            birth = '19' + self.id[6:12]  # 目前的15位身份证是19xx年出生
             return birth
         else:
             return "ERROR"
 
-    def get_age(self):
-        """通过身份证号获取年龄"""
+    def get_age(self) -> int:
+        """
+        通过身份证号获取年龄
+        :return: 年龄
+        :rtype: int
+        """
         now = (datetime.now() + timedelta(days=1))
         year, month, day = now.year, now.month, now.day
 
@@ -67,20 +87,50 @@ class IdCardNumber(str):
             else:
                 return year - self.birth_year
 
-    def get_sex(self):
-        """通过身份证号获取性别， 女生：0，男生：1"""
+    def get_sex(self) -> int:
+        """
+        通过身份证号获取性别， 女生：0，男生：1
+        :return: 性别代码
+        :rtype: int
+        """
         return int(self.id[16:17]) % 2
+
+    def is_valid_birthdate(self) -> bool:
+        """
+        验证出生日期是否有效
+        :return: 是否有效
+        """
+        try:
+            datetime(self.birth_year, self.birth_month, self.birth_day)
+            return True
+        except ValueError:
+            return False
+
+    @staticmethod
+    def calculate_check_digit(digital_ontology_code: str) -> str:
+        """
+        计算身份证号码校验码
+        :param digital_ontology_code: 17位数字本体码
+        :return: 校验码
+        """
+        if len(digital_ontology_code) != 17:
+            raise ValueError("数字本体码必须是17位")
+        
+        wi = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2]  # 加权因子
+        vi = [1, 0, 'X', 9, 8, 7, 6, 5, 4, 3, 2]  # 校验码对应值
+        
+        check_sum = sum(int(digital_ontology_code[i]) * wi[i] for i in range(17))
+        remainder = check_sum % 11
+        return str(vi[remainder])
 
     def get_check_digit(self):
         """通过身份证号获取校验码"""
-        check_sum = 0
-        for i in range(0, 17):
-            check_sum += ((1 << (17 - i)) % 11) * int(self.id[i])
-        check_digit = (12 - (check_sum % 11)) % 11
-        return check_digit if check_digit < 10 else 'X'
+        if len(self.id) != 18:
+            raise ValueError("只有18位身份证才有校验码")
+        return self.calculate_check_digit(self.id[:17])
 
     @staticmethod
-    def get_checkcode(digital_ontology_code:str) -> str or bool:
+    def get_checkcode(digital_ontology_code: str) -> str:
         """
         静态方法，从身份证号码前17位数字本体码计算第18位校验码
         :param digital_ontology_code:   17位数字本体码
@@ -88,19 +138,9 @@ class IdCardNumber(str):
         :return str(vi[remainder]): 18位身份证的最后1位校验码
         :rtype str(vi[remainder]): str
         """
-        ai = []  # 17位数字本体码按位分割的列表,先创建列表，后面再赋值
-        wi = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2]  # 加权因子列表
-        vi = [1, 0, 'X', 9, 8, 7, 6, 5, 4, 3, 2]   # 校验码列表
-        remainder = None # 用于在校验码列表中找校验码的模 （先赋值为None，后面再计算赋值）
-        if len(digital_ontology_code) == 17:
-            s = 0
-            for i in digital_ontology_code:
-                ai.append(int(i))
-            for i in range(17):
-                s = s + wi[i] * ai[i]  # 计算和
-            remainder = s % 11  # 计算模
-            return  str(vi[remainder])  # 通过模的值在校验码列表中找到对应的校验码并返回str
-        else:
+        try:
+            return IdCardNumber.calculate_check_digit(digital_ontology_code)
+        except ValueError:
             return False
 
     def fifteen_to_eighteen(self) -> str:
@@ -119,7 +159,7 @@ class IdCardNumber(str):
         """
         if len(self.id) == 15:
             digital_ontology_code = self.id[0:6] + '19' + self.id[6:15]
-            return digital_ontology_code + self.get_checkcode(digital_ontology_code)
+            return digital_ontology_code + self.calculate_check_digit(digital_ontology_code)
         else:
             return "ERROR"
 
@@ -136,36 +176,56 @@ class IdCardNumber(str):
             return "ERROR"
 
     @classmethod
-    def verify_id(cls, id_card_number):
-        """校验身份证是否正确"""
-        if not re.match(area.ID_NUMBER_18_REGEX, id_card_number):
-            return bool(re.match(area.ID_NUMBER_15_REGEX, id_card_number))
-        else:
-            check_digit = cls(id_card_number).get_check_digit()
-            return str(check_digit) == id_card_number[-1]
+    def verify_id(cls, id_card_number: str) -> bool:
+        """
+        校验身份证是否正确
+        :param id_card_number: 身份证号码
+        :return: 是否有效
+        """
+        # 验证格式
+        if not re.match(area.ID_NUMBER_18_REGEX, id_card_number) and not re.match(area.ID_NUMBER_15_REGEX, id_card_number):
+            return False
+        
+        # 验证18位身份证的校验码
+        if len(id_card_number) == 18:
+            try:
+                check_digit = cls.calculate_check_digit(id_card_number[:17])
+                return check_digit == id_card_number[-1].upper()
+            except (ValueError, IndexError):
+                return False
+        
+        return True
 
     @classmethod
-    def fake_id(cls, sex:[0,1]=0,area_number=0):
+    def fake_id(cls, sex: int = 0, area_number: int = 0):
         """
         随机生成身份证号，sex = 0表示女性，sex = 1表示男性
         生日在1960-2010区间
         """
-        if int(area_number) not in area.AREA_INFO.keys():
-            # 随机生成一个区域码(6位数)
-            id_card_number = str(random.choice(list(area.AREA_INFO.keys())))
+        # 缓存区域码列表
+        if not hasattr(cls, '_area_codes'):
+            cls._area_codes = list(area.AREA_INFO.keys())
+        
+        # 选择区域码
+        if area_number and area_number in area.AREA_INFO:
+            id_card_number = str(area_number)
         else:
-            # 指定区域码
-            id_card_number = area_number
-        # 限定出生日期范围(8位数)
-        start, end = datetime.strptime("1960-01-01", "%Y-%m-%d"), datetime.strptime("2010-12-31", "%Y-%m-%d")
-        birth_days = datetime.strftime(start + timedelta(random.randint(0, (end - start).days + 1)), "%Y%m%d")
-        id_card_number += str(birth_days)
-        # 顺序码(2位数)
-        id_card_number += str(random.randint(10, 99))
-        # 性别码(1位数)
-        id_card_number += str(random.randrange(sex, 10, step=2))
-        # 校验码(1位数)
-        return id_card_number + str(cls(id_card_number).get_check_digit())
+            id_card_number = str(random.choice(cls._area_codes))
+        
+        # 生成出生日期
+        start, end = datetime(1960, 1, 1), datetime(2010, 12, 31)
+        days_between = (end - start).days
+        random_days = random.randint(0, days_between)
+        birth_date = start + timedelta(days=random_days)
+        birth_days = birth_date.strftime("%Y%m%d")
+        id_card_number += birth_days
+        
+        # 生成顺序码和性别码
+        id_card_number += str(random.randint(10, 99))  # 顺序码
+        id_card_number += str(random.randrange(sex, 10, step=2))  # 性别码
+        
+        # 计算校验码
+        return id_card_number + cls.calculate_check_digit(id_card_number)
 
 
 if __name__ == '__main__':
